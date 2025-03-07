@@ -1,16 +1,36 @@
-
-
-
 {
   "happy": "rgba(255, 215, 0, 0.5)",
   "sad": "rgba(30, 144, 255, 0.5)",
   "angry": "rgba(255, 99, 71, 0.5)",
-  "surprised": "rgba(255, 20, 147, 0.5)",
+  "surprise": "rgba(255, 20, 147, 0.5)",
   "neutral": "rgba(176, 196, 222, 0.5)",
   "excited": "rgba(50, 205, 50, 0.5)",
-  "bored": "rgba(211, 211, 211, 0.5)",
-  "fearful": "rgba(128, 0, 128, 0.5)",
+  "boredom": "rgba(211, 211, 211, 0.5)",
+  "fear": "rgba(128, 0, 128, 0.5)",
   "worried": "rgba(255, 165, 0, 0.5)",
   "crying": "rgba(0, 0, 255, 0.5)",
-  "know": "rgba(138, 43, 226, 0.5)"
+  "caring": "rgba(255, 182, 193, 0.5)",
+  "annoyance": "rgba(255, 140, 0, 0.5)",
+  "disappointment": "rgba(105, 105, 105, 0.5)",
+  "nervousness": "rgba(255, 223, 186, 0.5)",
+  "approval": "rgba(60, 179, 113, 0.5)",
+  "desire": "rgba(255, 99, 71, 0.5)",
+  "curiosity": "rgba(70, 130, 180, 0.5)",
+  "pride": "rgba(186, 85, 211, 0.5)",
+  "confusion": "rgba(169, 169, 169, 0.5)",
+  "gratitude": "rgba(255, 215, 0, 0.5)",
+  "love": "rgba(255, 105, 180, 0.5)",
+  "amusement": "rgba(0, 255, 255, 0.5)",
+  "grief": "rgba(47, 79, 79, 0.5)",
+  "joy": "rgba(255, 215, 0, 0.5)",
+  "admiration": "rgba(60, 179, 113, 0.5)",
+  "embarrassment": "rgba(255, 160, 122, 0.5)",
+  "disapproval": "rgba(220, 20, 60, 0.5)",
+  "relief": "rgba(173, 216, 230, 0.5)",
+  "remorse": "rgba(112, 128, 144, 0.5)",
+  "realization": "rgba(255, 223, 0, 0.5)",
+  "optimism": "rgba(154, 205, 50, 0.5)",
+  "disgust": "rgba(85, 107, 47, 0.5)",  
+  "anger": "rgba(255, 0, 0, 0.5)",  
+  "sadness": "rgba(70, 130, 180, 0.5)" 
 }

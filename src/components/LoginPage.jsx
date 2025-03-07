@@ -3,7 +3,7 @@ import { FcGoogle } from "react-icons/fc";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebaseConfig";
 import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, GoogleAuthProvider, getAuth, signInWithPopup } from "firebase/auth";
 
 const Button = ({ children, className, ...props }) => {
   return (
@@ -55,10 +55,36 @@ const LoginPage = () => {
   };
 
   const handleGoogleLogin = async () => {
-    const provider = new auth.GoogleAuthProvider();
+    const provider = new GoogleAuthProvider();
     try {
-      await auth.signInWithPopup(provider);
-      navigate('/mood-capture');
+      await signInWithPopup(auth,provider);
+      const userAuth = getAuth();
+      const user = userAuth.currentUser;
+      const token = await user.getIdToken(true);
+      const userData = {
+        name: user.displayName,
+        age:'Unknown',
+        gender: 'Unknown',
+        city: 'Unknown',
+        country: 'Unknown',
+        photoURL: user.photoURL,
+        uid: user.uid, // Firebase unique user ID
+      };
+      const response = await fetch(
+        // 'http://localhost:5001/api/users/register',
+        "https://cuddle-up-backend.onrender.com/api/users/register", 
+        {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // Attach Firebase token
+        },
+        body: JSON.stringify(userData),
+      });
+  
+      const data = await response.json();
+      console.log(data)
+      // navigate('/mood-capture');
     } catch (error) {
       console.error(error.message);
       alert('Error logging in with Google!');
@@ -110,14 +136,21 @@ const LoginPage = () => {
           />
 
           {/* Login with Google Button */}
-          <Button className="w-full h-14 text-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl transition-transform duration-200 hover:-translate-y-0.5">
-            <FcGoogle className="w-5 h-5" />
-            Log In with Gmail
+          <Button
+          onClick = {e => handleEmailPasswordLogin(e)}
+           className="w-full h-14 text-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl transition-transform duration-200 hover:-translate-y-0.5">
+
+            Log In
           </Button>
 
+          <p className="text-center mt-4 border-slate-200 border-b-2"></p>
+
           {/* Submit Login Button */}
-          <Button onClick={e => handleEmailPasswordLogin(e)} className="w-full h-14 text-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl transition-transform duration-200 hover:-translate-y-0.5 mt-4">
-            Log In
+          <Button onClick={handleGoogleLogin}
+          className="w-full h-14 text-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl transition-transform duration-200 hover:-translate-y-0.5 mt-4">
+            <FcGoogle className="w-5 h-5" />
+          
+            Log In with Gmail
           </Button>
         </div>
 
@@ -145,7 +178,6 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
-
 
 
 

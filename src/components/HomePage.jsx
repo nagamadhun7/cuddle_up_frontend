@@ -15,7 +15,7 @@ const Button = ({ children, className, ...props }) => {
 
 // import React from 'react';
 
-const HomePage = () => {
+const HomePage = ({ enableGuestMode }) => {
   const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -66,15 +66,21 @@ const HomePage = () => {
             <Button 
               variant="outline"
               className="w-full h-14 text-lg border-2 border-gray-200 hover:border-gray-300 text-gray-600 hover:text-gray-800 rounded-xl flex items-center justify-center gap-2 transition-transform duration-200 hover:-translate-y-0.5 hover:bg-white/50"
+              onClick={enableGuestMode}
             >
               Continue as Guest
               <ArrowRight className="w-5 h-5" />
             </Button>
           </div>
+          
         </div>
-
+        {/* <p className="mt-4 text-sm text-gray-600">
+          Guest mode allows you to try our app without creating an account.
+          <br />
+          Note: Your data won't be saved in guest mode.
+        </p> */}
         {/* Features Preview */}
-        {/* <div className="mt-8 grid grid-cols-3 gap-4 text-center text-sm text-gray-600">
+        <div className="mt-8 grid grid-cols-3 gap-4 text-center text-sm text-gray-600">
           <div className="bg-white/60 backdrop-blur-sm rounded-xl p-3 transition-transform duration-200 hover:-translate-y-0.5">
             🎯 Track Mood
           </div>
@@ -84,7 +90,7 @@ const HomePage = () => {
           <div className="bg-white/60 backdrop-blur-sm rounded-xl p-3 transition-transform duration-200 hover:-translate-y-0.5">
             🔒 Private & Secure
           </div>
-        </div> */}
+        </div>
       </div>
     </div>
   );
