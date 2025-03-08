@@ -816,7 +816,12 @@
 // export default Profile;
 
 import React, { useEffect, useState } from "react";
-import { getAuth } from "firebase/auth";
+import {
+  getAuth,
+  deleteUser,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+} from "firebase/auth";
 import Picker from "@emoji-mart/react";
 import { motion } from "framer-motion";
 
@@ -908,7 +913,6 @@ const Profile = () => {
       // Get the Firebase token
       const token = await user.getIdToken(true);
 
-
       // Make a GET request to your backend to fetch the user data
       const response = await fetch(
         // "http://localhost:5001/api/users/me",
@@ -918,24 +922,22 @@ const Profile = () => {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json' // Attach the Firebase token
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json", // Attach the Firebase token
           },
         }
       );
 
       // Parse response and handle errors
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(
           data.error || "Something went wrong fetching the user data"
         );
       }
 
-
       const userData = data.user || {};
-    
 
       // Store user details in state
       setUserData(userData);
@@ -964,7 +966,6 @@ const Profile = () => {
       setIsLoading(false);
     }
   };
-
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -1052,45 +1053,181 @@ const Profile = () => {
         .toUpperCase() // Convert to uppercase
     : "?";
 
-    function convertUTCRangeToLocal(utcRange, timeZone) {
-      if (utcRange == 'N/A') return 'N/A'
-      // Extract hours and minutes from the input range
-      const timeRegex = /(\d{1,2}):(\d{2}) (\w{2}) - (\d{1,2}):(\d{2}) (\w{2})/;
-      const match = utcRange.match(timeRegex);
-  
-      if (!match) {
-          throw new Error("Invalid time range format.");
-      }
-  
-      let [_, startHour, startMin, startPeriod, endHour, endMin, endPeriod] = match;
-  
-      // Convert to 24-hour format
-      startHour = parseInt(startHour, 10) + (startPeriod === "PM" && startHour !== "12" ? 12 : 0);
-      startHour = startPeriod === "AM" && startHour === 12 ? 0 : startHour;
-  
-      endHour = parseInt(endHour, 10) + (endPeriod === "PM" && endHour !== "12" ? 12 : 0);
-      endHour = endPeriod === "AM" && endHour === 12 ? 0 : endHour;
-  
-      // Get current date to form a full UTC Date object
-      const now = new Date();
-      const dateString = now.toISOString().split("T")[0]; // Get YYYY-MM-DD
-  
-      // Create UTC Date objects
-      const startUTC = new Date(`${dateString}T${String(startHour).padStart(2, '0')}:${startMin}:00Z`);
-      const endUTC = new Date(`${dateString}T${String(endHour).padStart(2, '0')}:${endMin}:00Z`);
-  
-      // Convert to local time
-      const localStart = startUTC.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone });
-      const localEnd = endUTC.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone });
-  
-      return `${localStart} - ${localEnd}`;
+  function convertUTCRangeToLocal(utcRange, timeZone) {
+    if (utcRange == "N/A") return "N/A";
+    // Extract hours and minutes from the input range
+    const timeRegex = /(\d{1,2}):(\d{2}) (\w{2}) - (\d{1,2}):(\d{2}) (\w{2})/;
+    const match = utcRange.match(timeRegex);
+
+    if (!match) {
+      throw new Error("Invalid time range format.");
+    }
+
+    let [_, startHour, startMin, startPeriod, endHour, endMin, endPeriod] =
+      match;
+
+    // Convert to 24-hour format
+    startHour =
+      parseInt(startHour, 10) +
+      (startPeriod === "PM" && startHour !== "12" ? 12 : 0);
+    startHour = startPeriod === "AM" && startHour === 12 ? 0 : startHour;
+
+    endHour =
+      parseInt(endHour, 10) + (endPeriod === "PM" && endHour !== "12" ? 12 : 0);
+    endHour = endPeriod === "AM" && endHour === 12 ? 0 : endHour;
+
+    // Get current date to form a full UTC Date object
+    const now = new Date();
+    const dateString = now.toISOString().split("T")[0]; // Get YYYY-MM-DD
+
+    // Create UTC Date objects
+    const startUTC = new Date(
+      `${dateString}T${String(startHour).padStart(2, "0")}:${startMin}:00Z`
+    );
+    const endUTC = new Date(
+      `${dateString}T${String(endHour).padStart(2, "0")}:${endMin}:00Z`
+    );
+
+    // Convert to local time
+    const localStart = startUTC.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone,
+    });
+    const localEnd = endUTC.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone,
+    });
+
+    return `${localStart} - ${localEnd}`;
   }
-  
+
   // Example: Convert "4:00 PM - 5:00 PM (UTC)" to New York Time
-  console.log(convertUTCRangeToLocal("4:00 PM - 5:00 PM (UTC)", "America/New_York"));
-  
+  // console.log(
+  //   convertUTCRangeToLocal("4:00 PM - 5:00 PM (UTC)", "America/New_York")
+  // );
 
+  async function reauthenticateUser(user, password) {
+    try {
+      const credential = EmailAuthProvider.credential(user.email, password);
+      await reauthenticateWithCredential(user, credential);
+      console.log("Reauthentication successful.");
+      return true;
+    } catch (error) {
+      console.error("Reauthentication failed:", error.message);
+      return false;
+    }
+  }
 
+  async function deleteAccount(password) {
+    const userAuth = getAuth();
+    const user = userAuth.currentUser;
+    const token = await user.getIdToken(true);
+    if (!user) {
+      console.log("No user signed in.");
+      return;
+    }
+
+    try {
+      // 🔹 Reauthenticate before deletion
+      const reauthenticated = await reauthenticateUser(user, password);
+      if (!reauthenticated) {
+        console.log("Reauthentication failed. Cannot proceed with deletion.");
+        return;
+      }
+
+      async function reauthenticateUser(user, password) {
+        try {
+          const credential = EmailAuthProvider.credential(user.email, password);
+          await reauthenticateWithCredential(user, credential);
+          console.log("Reauthentication successful.");
+          return true;
+        } catch (error) {
+          console.error("Reauthentication failed:", error.message);
+          return false;
+        }
+      }
+
+      const response = await fetch(
+        // "http://localhost:5001/api/users/delete",
+        "https://cuddle-up-backend.onrender.com/api/users/delete",
+
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // Attach Firebase token
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        console.log(
+          "Firestore data deleted successfully. Now deleting user..."
+        );
+
+        // 🔹 Delete the user from Firebase Authentication
+        await deleteUser(user);
+        console.log("User deleted successfully from Firebase.");
+      } else {
+        console.error("Failed to delete user from Firestore:", response.data);
+      }
+    } catch (error) {
+      console.error("Error during user deletion:", error.message);
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    const password = prompt(
+      "Please enter your password to confirm account deletion:"
+    );
+    if (password) {
+      await deleteAccount(password);
+    } else {
+      console.log("Account deletion canceled.");
+    }
+  };
+
+  const emojiMap = {
+    Happy: "😊",
+    Sad: "😔",
+    Angry: "😠",
+    Worried: "😟",
+    Crying: "😭",
+    Excited: "🤩",
+    Anger: "😡",
+    Sadness: "😔",
+    Excitement: "😆",
+    Surprise: "😲",
+    Disgust: "🤢",
+    Neutral: "😐",
+    Fear: "😨",
+    Caring: "🤗",
+    Annoyance: "😤",
+    Disappointment: "😞",
+    Nervousness: "😬",
+    Approval: "👍",
+    Desire: "🤤",
+    Curiosity: "🤔",
+    Pride: "😌",
+    Confusion: "😕",
+    Gratitude: "🙏",
+    Love: "❤️",
+    Amusement: "😂",
+    Grief: "😢",
+    Joy: "😄",
+    Admiration: "👏",
+    Embarrassment: "😳",
+    Disapproval: "👎",
+    Relief: "😌",
+    Remorse: "😞",
+    Realization: "💡",
+    Optimism: "🌟",
+    Boredom: "😴"
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col items-center justify-start p-10 relative overflow-hidden">
       <div className="relative z-10 w-full max-w-5xl">
@@ -1118,23 +1255,24 @@ const Profile = () => {
                 >
                   {userEmoji}
                 </motion.div> */}
-                {
-                  userData.photoURL ? 
-                  <img src={userData.photoURL} alt="Profile" className="w-24 h-24 rounded-full" />
-                  :
+                {userData.photoURL ? (
+                  <img
+                    src={userData.photoURL}
+                    alt="Profile"
+                    className="w-24 h-24 rounded-full"
+                  />
+                ) : (
                   <motion.div
-                  key={userEmoji}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="w-32 h-32 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white text-5xl font-bold shadow-lg"
-                >
-                {userEmoji}
-                </motion.div>
-                }
-   
-
+                    key={userEmoji}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="w-32 h-32 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white text-5xl font-bold shadow-lg"
+                  >
+                    {userEmoji}
+                  </motion.div>
+                )}
               </div>
 
               <div className="absolute bottom-0 right-0 bg-green-400 h-6 w-6 rounded-full border-4 border-white"></div>
@@ -1306,14 +1444,30 @@ const Profile = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 cursor-not-allowed">
                 {[
-                  { title: "Theme", description: "Light mode" },
-                  { title: "Notifications", description: "Enabled" },
-                  { title: "Language", description: "English (US)" },
-                  { title: "Privacy", description: "Private account" },
+                  { title: "Theme", description: "Light mode", premium: true },
+                  {
+                    title: "Notifications",
+                    description: "Enabled",
+                    premium: true,
+                  },
+                  {
+                    title: "Delete account",
+                    description: "Permanently remove your data",
+                    premium: false,
+                  },
+                  {
+                    title: "Privacy",
+                    description: "Private account",
+                    premium: true,
+                  },
                 ].map((item, index) => (
                   <div
                     key={index}
-                    className="relative flex items-center justify-between bg-gray-50 p-3 rounded-xl opacity-50"
+                    className={`relative flex items-center justify-between bg-gray-50 p-3 rounded-xl ${
+                      item.premium
+                        ? "opacity-50 cursor-not-allowed"
+                        : "bg-red-50 cursor-pointer"
+                    }`}
                   >
                     <div>
                       <p className="font-medium text-gray-800">{item.title}</p>
@@ -1322,16 +1476,23 @@ const Profile = () => {
                       </p>
                     </div>
                     <button
-                      className="text-gray-400 text-sm cursor-not-allowed"
-                      disabled
+                      className={`text-sm ${
+                        item.premium
+                          ? "cursor-not-allowed text-gray-400"
+                          : "text-red-500 hover:text-red-700"
+                      }`}
+                      disabled={item.premium}
+                      onClick={!item.premium ? handleDeleteAccount : undefined}
                     >
-                      Locked
+                      {item.premium ? "Locked" : "Delete"}
                     </button>
-                    <div className="absolute inset-0 bg-gray-100 bg-opacity-50 flex items-center justify-center rounded-xl">
-                      <span className="text-sm font-medium text-gray-700">
-                        🔒 Premium Required
-                      </span>
-                    </div>
+                    {item.premium && (
+                      <div className="absolute inset-0 bg-gray-100 bg-opacity-50 flex items-center justify-center rounded-xl">
+                        <span className="text-sm font-medium text-gray-700">
+                          🔒 Premium Required
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1342,7 +1503,7 @@ const Profile = () => {
         {/* <Picker onEmojiSelect={(emoji) => setUserEmoji(emoji.native)} /> */}
 
         {/* Mood Insights Section - Full Width */}
-        <div className="bg-white/90 backdrop-blur-lg shadow-xl rounded-3xl p-6 w-full">
+        {/* <div className="bg-white/90 backdrop-blur-lg shadow-xl rounded-3xl p-6 w-full">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-semibold text-gray-800">
               Mood Insights
@@ -1370,46 +1531,28 @@ const Profile = () => {
               <p className="text-sm text-gray-500 mt-2">{longestStreak} Days</p>
             </div>
 
-            <div className="bg-white w-40 shadow-sm rounded-xl p-4 hover:shadow-lg transition-shadow duration-300">
+            <div className="bg-white  shadow-sm rounded-xl p-4 hover:shadow-lg transition-shadow duration-300">
               <div className="flex justify-between items-center mb-2">
                 <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
-                  Most Frequent Mood
+                
+                  Dominant Mood
                 </span>
               </div>
 
-              <p className="text-sm text-gray-500 mt-2">{mostFrequentMood}</p>
+              <p className="text-sm text-gray-500 mt-2">{mostFrequentMood} {emojiMap[mostFrequentMood]}</p>
             </div>
 
-            <div className="bg-white w-44 shadow-sm rounded-xl p-4 hover:shadow-lg transition-shadow duration-300">
+            <div className="bg-white w-36 shadow-sm rounded-xl p-4 hover:shadow-lg transition-shadow duration-300">
               <div className="flex justify-between items-center mb-2">
                 <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-medium">
-                  Most Frequent Mood %
+                  
+                  Dominant Mood%
                 </span>
               </div>
 
               <p className="text-sm text-gray-500 mt-2">
                 {mostFrequentMoodPercentage}%
               </p>
-            </div>
-
-            <div className="bg-white shadow-sm rounded-xl p-4 hover:shadow-lg transition-shadow duration-300">
-              <div className="flex justify-between items-center mb-2">
-                <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full font-medium">
-                  Happiest Day
-                </span>
-              </div>
-
-              <p className="text-sm text-gray-500 mt-2">{happiestDay}</p>
-            </div>
-
-            <div className="bg-white shadow-sm rounded-xl p-4 hover:shadow-lg transition-shadow duration-300">
-              <div className="flex justify-between items-center mb-2">
-                <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full font-medium">
-                  Saddest Day
-                </span>
-              </div>
-
-              <p className="text-sm text-gray-500 mt-2">{saddestDay}</p>
             </div>
 
             <div className="bg-white w-40 shadow-sm rounded-xl p-4 hover:shadow-lg transition-shadow duration-300">
@@ -1424,15 +1567,125 @@ const Profile = () => {
 
             <div className="bg-white shadow-sm rounded-xl p-4 hover:shadow-lg transition-shadow duration-300">
               <div className="flex justify-between items-center mb-2">
+                <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full font-medium">
+                  Happiest Day
+                </span>
+              </div>
+
+              <p className="text-sm text-gray-500 mt-2">{happiestDay}</p>
+            </div>
+
+           
+            <div className="bg-white shadow-sm rounded-xl p-4 hover:shadow-lg transition-shadow duration-300">
+              <div className="flex justify-between items-center mb-2">
+                <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full font-medium">
+                  Saddest Day
+                </span>
+              </div>
+
+              <p className="text-sm text-gray-500 mt-2">{saddestDay}</p>
+            </div>
+
+           
+
+            <div className="bg-white shadow-sm rounded-xl p-4 hover:shadow-lg transition-shadow duration-300">
+              <div className="flex justify-between items-center mb-2">
                 <span className="bg-red-100 text-gray-800 text-xs px-2 py-1 rounded-full font-medium">
                   Most Active Time
                 </span>
               </div>
 
-              <p className="text-sm text-gray-500 mt-2">{convertUTCRangeToLocal(mostActiveTime,"America/New_York")}</p>
+              <p className="text-sm text-gray-500 mt-2">
+                {convertUTCRangeToLocal(mostActiveTime, "America/New_York")}
+              </p>
             </div>
           </div>
-        </div>
+        </div> */}
+        <div className="bg-white/90 backdrop-blur-lg shadow-xl rounded-3xl p-4 sm:p-6 w-full">
+  <div className="flex justify-between items-center mb-4 sm:mb-6">
+    <h3 className="text-lg sm:text-xl font-semibold text-gray-800">
+      Mood Insights
+    </h3>
+  </div>
+
+  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+    <div className="bg-white shadow-sm rounded-xl p-3 sm:p-4 hover:shadow-lg transition-shadow duration-300">
+      <div className="flex items-center mb-2">
+        <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full font-medium inline-block">
+          Mood Stability Score
+        </span>
+      </div>
+      <p className="text-sm text-gray-500 mt-2">{moodStabilityScore}</p>
+    </div>
+
+    <div className="bg-white shadow-sm rounded-xl p-3 sm:p-4 hover:shadow-lg transition-shadow duration-300">
+      <div className="flex items-center mb-2">
+        <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium inline-block">
+          Longest Streak
+        </span>
+      </div>
+      <p className="text-sm text-gray-500 mt-2">{longestStreak} Days</p>
+    </div>
+
+    <div className="bg-white shadow-sm rounded-xl p-3 sm:p-4 hover:shadow-lg transition-shadow duration-300">
+      <div className="flex items-center mb-2">
+        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium inline-block">
+          Dominant Mood
+        </span>
+      </div>
+      <p className="text-sm text-gray-500 mt-2">{mostFrequentMood} {emojiMap[mostFrequentMood]}</p>
+    </div>
+
+    <div className="bg-white shadow-sm rounded-xl p-3 sm:p-4 hover:shadow-lg transition-shadow duration-300">
+      <div className="flex items-center mb-2">
+        <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-medium inline-block">
+          Dominant Mood %
+        </span>
+      </div>
+      <p className="text-sm text-gray-500 mt-2">
+        {mostFrequentMoodPercentage}%
+      </p>
+    </div>
+
+    <div className="bg-white shadow-sm rounded-xl p-3 sm:p-4 hover:shadow-lg transition-shadow duration-300">
+      <div className="flex items-center mb-2">
+        <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium inline-block">
+          Mood Change Rate
+        </span>
+      </div>
+      <p className="text-sm text-gray-500 mt-2">{moodChangeRate}</p>
+    </div>
+
+    <div className="bg-white shadow-sm rounded-xl p-3 sm:p-4 hover:shadow-lg transition-shadow duration-300">
+      <div className="flex items-center mb-2">
+        <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full font-medium inline-block">
+          Happiest Day
+        </span>
+      </div>
+      <p className="text-sm text-gray-500 mt-2">{happiestDay}</p>
+    </div>
+
+    <div className="bg-white shadow-sm rounded-xl p-3 sm:p-4 hover:shadow-lg transition-shadow duration-300">
+      <div className="flex items-center mb-2">
+        <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full font-medium inline-block">
+          Saddest Day
+        </span>
+      </div>
+      <p className="text-sm text-gray-500 mt-2">{saddestDay}</p>
+    </div>
+
+    <div className="bg-white shadow-sm rounded-xl p-3 sm:p-4 hover:shadow-lg transition-shadow duration-300">
+      <div className="flex items-center mb-2">
+        <span className="bg-red-100 text-gray-800 text-xs px-2 py-1 rounded-full font-medium inline-block">
+          Most Active Time
+        </span>
+      </div>
+      <p className="text-sm text-gray-500 mt-2">
+        {convertUTCRangeToLocal(mostActiveTime, "America/New_York")}
+      </p>
+    </div>
+  </div>
+</div>
       </div>
     </div>
   );

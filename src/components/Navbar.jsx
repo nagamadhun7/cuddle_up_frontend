@@ -34,7 +34,8 @@ function Navbar({ user, isGuest }) {
             <img
               src="/images/logo.png"
               alt="Felora Logo"
-              className="h-8 md:h-10"
+              className="h-8 md:h-10 cursor-pointer"
+              onClick={() => handleNavigation("/mood-capture")}
             />
             <span
               className="text-xl md:text-2xl font-semibold text-indigo-700 tracking-tight cursor-pointer"

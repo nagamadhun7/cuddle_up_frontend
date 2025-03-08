@@ -388,7 +388,7 @@ const MoodCapture = ({ user, isGuest }) => {
         <div
           ref={insightsRef}
           className="transition-all overflow-y-auto h-[60vh] md:h-[50vh] duration-500 ease-in-out max-w-5xl w-full bg-white/90 backdrop-blur-lg shadow-xl rounded-3xl p-6 md:p-8 mx-auto"
-          style={{ backgroundColor: moodColor }}
+          style={{ backgroundColor: moodColor.replace(/rgba?\(([^)]+)\)/, "rgba($1, 0.5)") }}
         >
           <div className="border-b border-gray-200/50 pb-4 mb-6">
             <div className="flex items-center gap-4">
@@ -432,8 +432,10 @@ const MoodCapture = ({ user, isGuest }) => {
                   </svg>
                   Personalized Insight
                 </h3>
-                <p className="text-gray-700">
-                  {moodInsights[selectedMood.label]?.text}
+                <p className="text-gray-400">
+                {/* text-gray-700 */}
+                  {/* {moodInsights[selectedMood.label]?.text} */}
+                  Available for premium only
                 </p>
               </div>
 
@@ -455,8 +457,9 @@ const MoodCapture = ({ user, isGuest }) => {
                   </svg>
                   Nutrition Recommendation
                 </h3>
-                <p className="text-gray-700">
-                  {moodInsights[selectedMood.label]?.food}
+                <p className="text-gray-400">
+                  {/* {moodInsights[selectedMood.label]?.food} */}
+                  Available for premium only
                 </p>
               </div>
             </div>

@@ -563,7 +563,7 @@ const MoodInputModal = ({
 
     if (!response.ok || !result.dominantEmotion) {
       setSelectedImage('')
-      throw new Error("Failed to analyze audio");
+      throw new Error("Failed to analyze image");
     }
 
     setSelectedImage('')
@@ -580,7 +580,7 @@ const MoodInputModal = ({
   }
   catch (error) {
     console.error("Error analyzing photo:", error);
-    setError("Please try again");
+    setError("Kindly upload a image with a visible face");
     return null;
   }
   };

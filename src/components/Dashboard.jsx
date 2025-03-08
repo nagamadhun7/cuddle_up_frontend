@@ -5,6 +5,7 @@ import "echarts-liquidfill";
 import { getAuth } from "firebase/auth";
 import axios from "axios";
 import emotionColor from "../emotionColors.json";
+import { Link } from "react-router-dom";
 
 const Dashboard = () => {
   const [moodData, setMoodData] = useState([]);
@@ -15,14 +16,14 @@ const Dashboard = () => {
   const [timeOfDayStats, setTimeOfDayStats] = useState({});
 
   // Emotion colors matching the emotions from your backend data
-  const emotionColors = {
-    happy: "#FFD700",
-    sad: "#B0C4DE",
-    angry: "#FF6347",
-    excited: "#32CD32",
-    worried: "#FFA500",
-    crying: "#0000FF",
-  };
+  // const emotionColors = {
+  //   happy: "#FFD700",
+  //   sad: "#B0C4DE",
+  //   angry: "#FF6347",
+  //   excited: "#32CD32",
+  //   worried: "#FFA500",
+  //   crying: "#0000FF",
+  // };
 
   // Time of day labels and order
   const timeOfDayOrder = [
@@ -243,7 +244,7 @@ const Dashboard = () => {
   // Get dominant mood color for the liquid fill
   const getDominantMoodColor = () => {
     if (!emotionStats.dominant) return "#B0C4DE"; // Default color
-    return emotionColors[emotionStats.dominant.toLowerCase()] || "#B0C4DE";
+    return emotionColor[emotionStats.dominant.toLowerCase()] || "#B0C4DE";
   };
 
   // Prepare data for charts
@@ -286,7 +287,7 @@ const Dashboard = () => {
       name: mood,
       value: emotionStats.counts[mood],
       itemStyle: {
-        color: emotionColors[mood.toLowerCase()] || "#B0C4DE",
+        color: emotionColor[mood.toLowerCase()] || "#B0C4DE",
       },
     }));
 
@@ -382,24 +383,25 @@ const Dashboard = () => {
     });
 
     // Use emotionColors to assign colors to moods - FIXED: no toLowerCase()
-    const emotionColors = {
-      Happy: "#FFD700",
-      Sad: "#B0C4DE",
-      Angry: "#FF6347",
-      Excited: "#32CD32",
-      Worried: "#FFA500",
-      Crying: "#0000FF",
-    };
+    // const emotionColors = {
+    //   Happy: "#FFD700",
+    //   Sad: "#B0C4DE",
+    //   Angry: "#FF6347",
+    //   Excited: "#32CD32",
+    //   Worried: "#FFA500",
+    //   Crying: "#0000FF",
+    // };
 
     // Prepare series data with different color for each mood
     const series = uniqueMoods.map((mood, index) => {
+  
       const moodData = bubbleData.filter((item) => item[1] === index);
       return {
         name: mood,
         type: "scatter",
         symbolSize: (data) => data[2], // Bubble size depends on frequency
         itemStyle: {
-          color: emotionColors[mood] || "#B0C4DE", // Default to light gray if mood is not found
+          color: emotionColor[mood.toLowerCase()] || "#B0C4DE", // Default to light gray if mood is not found
         },
         data: moodData,
       };
@@ -507,7 +509,7 @@ const Dashboard = () => {
           focus: "series",
         },
         itemStyle: {
-          color: emotionColors[mood.toLowerCase()] || "#B0C4DE",
+          color: emotionColor[mood.toLowerCase()] || "#B0C4DE",
         },
         data: data,
       };
@@ -546,14 +548,52 @@ const Dashboard = () => {
 
   // Function to get mood emoji
   const getMoodEmoji = (mood) => {
+    // const emojiMap = {
+    //   Happy: "😊",
+    //   Sad: "😔",
+    //   Angry: "😠",
+    //   Excited: "🤩",
+    //   Worried: "😟",
+    //   Crying: "😭",
+    // };
     const emojiMap = {
       Happy: "😊",
       Sad: "😔",
       Angry: "😠",
-      Excited: "🤩",
       Worried: "😟",
       Crying: "😭",
+      Excited: "🤩",
+      Anger: "😡",
+      Sadness: "😔",
+      Excitement: "😆",
+      Surprise: "😲",
+      Disgust: "🤢",
+      Neutral: "😐",
+      Fear: "😨",
+      Caring: "🤗",
+      Annoyance: "😤",
+      Disappointment: "😞",
+      Nervousness: "😬",
+      Approval: "👍",
+      Desire: "🤤",
+      Curiosity: "🤔",
+      Pride: "😌",
+      Confusion: "😕",
+      Gratitude: "🙏",
+      Love: "❤️",
+      Amusement: "😂",
+      Grief: "😢",
+      Joy: "😄",
+      Admiration: "👏",
+      Embarrassment: "😳",
+      Disapproval: "👎",
+      Relief: "😌",
+      Remorse: "😞",
+      Realization: "💡",
+      Optimism: "🌟",
+      Boredom: "😴"
     };
+    
 
     return emojiMap[mood] || "😐";
   };
@@ -561,18 +601,94 @@ const Dashboard = () => {
   // Get time of day label
   const getTimeOfDayLabel = (timeOfDay) => {
     // return timeOfDayLabels[timeOfDay] || timeOfDay;
+    console.log(timeOfDay)
     const timeOfDayMap = {
       earlyMorning: "🌅 Early Morning",
       morning: "🌞 Morning",
       lateMorning: "🌄 Late Morning",
       afternoon: "🌻 Afternoon",
       lateAfternoon: "🌇 Late Afternoon",
+      earlyEvening: "🌆 Early Evening",
       evening: "🌙 Evening",
       lateEvening: "🌜 Late Evening",
       night: "🌙 Night",
       lateNight: "🌚 Late Night",
     };
     return timeOfDayMap[timeOfDay];
+  };
+
+  const renderEmptyState = () => {
+    return (
+      <div className="bg-white/90 backdrop-blur-lg shadow-xl rounded-3xl p-8 md:p-12 w-full flex flex-col items-center justify-center text-center">
+        <div className="mb-8">
+          <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-12 w-12 text-blue-500" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+              />
+            </svg>
+          </div>
+          <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
+            Welcome to Your Mood Dashboard!
+          </h3>
+          <p className="text-gray-600 text-lg md:text-xl max-w-2xl mx-auto mb-6">
+            You haven't logged any moods yet. Start tracking to see patterns and insights about your emotional wellbeing.
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl mb-8">
+          <div className="bg-blue-50 p-6 rounded-xl">
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
+                <span className="text-2xl">📊</span>
+              </div>
+              <h4 className="font-semibold text-lg text-gray-800 mb-1">Track Patterns</h4>
+              <p className="text-gray-600 text-center">Discover trends in your emotional wellbeing over time</p>
+            </div>
+          </div>
+          
+          <div className="bg-purple-50 p-6 rounded-xl">
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-3">
+                <span className="text-2xl">🔍</span>
+              </div>
+              <h4 className="font-semibold text-lg text-gray-800 mb-1">Gain Insights</h4>
+              <p className="text-gray-600 text-center">Understand what influences your moods and emotions</p>
+            </div>
+          </div>
+          
+          <div className="bg-green-50 p-6 rounded-xl">
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
+                <span className="text-2xl">🌱</span>
+              </div>
+              <h4 className="font-semibold text-lg text-gray-800 mb-1">Improve Wellbeing</h4>
+              <p className="text-gray-600 text-center">Use insights to make positive changes to your daily routine</p>
+            </div>
+          </div>
+        </div>
+        
+        <Link 
+          to="/mood-capture" // Assuming you have a route for logging moods
+          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg text-lg shadow-lg hover:shadow-xl transition-all duration-200"
+        >
+          Log Your First Mood
+        </Link>
+        
+        <div className="mt-8 text-gray-500">
+          <p>Your dashboard will automatically update as you log your moods</p>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -623,6 +739,9 @@ const Dashboard = () => {
           <div className="bg-white/90 backdrop-blur-lg shadow-xl rounded-3xl p-10 mb-8 w-full flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
           </div>
+           ) : moodData.length === 0 ? (
+            // Empty state UI when no moods are logged
+            renderEmptyState()
         ) : (
           <>
             {/* Top Row - Dominant Mood and Pie Chart */}
