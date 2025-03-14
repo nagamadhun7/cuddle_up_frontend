@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import MoodInputModal from "./MoodInputModal";
 import emotionColors from "../emotionColors.json";
 import { getAuth } from "firebase/auth";
+import { io } from "socket.io-client";
 import axios from "axios";
 
 const MoodCapture = ({ user, isGuest }) => {
@@ -18,6 +19,9 @@ const MoodCapture = ({ user, isGuest }) => {
   // const moodColor = emotionColors[selectedMood?.label.toLowerCase()] || "#FFFFFF";
   const moodColor =
     emotionColors[selectedMood?.label?.toLowerCase()] ?? "#FFFFFF";
+
+  const socket = io("wss://cuddle-up-backend.onrender.com");
+
 
   // const auth = getAuth();
   // const user = auth.currentUser
@@ -283,6 +287,11 @@ const MoodCapture = ({ user, isGuest }) => {
       mood: selectedMood.label,
       reason: selectedReason,
     };
+
+    const userId = user.uid
+
+    console.log("Emitting update_mood event:", { userId, mood: moodData.mood });
+    socket.emit("update_mood", { userId, mood: moodData.mood });
 
     try {
       const token = await user.getIdToken();

@@ -3,22 +3,52 @@ import { Menu, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebaseConfig";
+import { FaUserFriends } from 'react-icons/fa'; 
+import axios from "axios";
 
 function Navbar({ user, isGuest }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  // const handleLogout = () => {
+  //   setIsMenuOpen(false); // Close menu when logging out
+  //   signOut(auth)
+  //     .then(() => {
+  //       console.log("User logged out successfully");
+  //       navigate("/");
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error logging out:", error.message);
+  //     });
+  // };
+  const handleLogout = async () => {
     setIsMenuOpen(false); // Close menu when logging out
-    signOut(auth)
-      .then(() => {
-        console.log("User logged out successfully");
-        navigate("/");
-      })
-      .catch((error) => {
-        console.error("Error logging out:", error.message);
-      });
-  };
+    // const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (user) {
+        try {
+            const token = await user.getIdToken(true);
+
+            // Call backend to update status to inactive
+            await axios.post("https://cuddle-up-backend.onrender.com/api/users/updateUserStatus", {
+                userId: user.uid,
+                status: "inactive",
+            }, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            // Proceed with Firebase logout
+            await signOut(auth);
+            // console.log("User logged out and status updated to inactive.");
+            navigate("/");
+        } catch (error) {
+            console.error("Error logging out:", error.message);
+        }
+    } else {
+        console.log("No user logged in.");
+    }
+};
 
   const handleNavigation = (path) => {
     setIsMenuOpen(false); // Close menu when navigating
@@ -56,12 +86,28 @@ function Navbar({ user, isGuest }) {
             </Link>
             {user && (
               <>
+              <Link
+                  to="/friends"
+                  className="text-[14px] flex items-center gap-2 text-gray-800 font-medium hover:text-indigo-600 transition-all duration-300"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                <FaUserFriends className="w-5 h-5 " />
+
+                  Friends
+                </Link>
                 <Link
                   to="/profile"
                   className="text-[14px] text-gray-800 font-medium hover:text-indigo-600 transition-all duration-300"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Profile
+                </Link>
+                <Link
+                  to="/pomodoro"
+                  className="text-[14px] text-gray-800 font-medium hover:text-indigo-600 transition-all duration-300"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Pomodoro
                 </Link>
                 <Link
                   to="/dashboard"
@@ -130,6 +176,22 @@ function Navbar({ user, isGuest }) {
             >
               Profile
             </Link>
+            <Link
+              to="/pomodoro"
+              className="block text-[14px] text-gray-800 font-medium hover:text-indigo-600 transition-all duration-300 py-2"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Pomodoro
+            </Link>
+            <Link
+                  to="/friends"
+                  className="text-[14px] flex items-center gap-2 text-gray-800 font-medium hover:text-indigo-600 transition-all duration-300"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                <FaUserFriends className="w-5 h-5 " />
+
+                  Friends
+                </Link>
             <Link
               to="/dashboard"
               className="block text-[14px] text-gray-800 font-medium hover:text-indigo-600 transition-all duration-300 py-2"

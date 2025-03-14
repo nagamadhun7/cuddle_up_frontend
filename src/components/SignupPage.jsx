@@ -93,7 +93,7 @@ const handleSignUp = async (e) => {
     // Send data to backend with token
     const response = await fetch(
       'https://cuddle-up-backend.onrender.com/api/users/register',
-      // "https://cuddle-up-backend.onrender.com/api/users/register", 
+      // "http://localhost:5001/api/users/register", 
       {
       method: "POST",
       headers: {

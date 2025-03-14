@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { auth } from "../firebaseConfig";
 import { useState } from "react";
 import { signInWithEmailAndPassword, GoogleAuthProvider, getAuth, signInWithPopup } from "firebase/auth";
+import axios from "axios";
 
 const Button = ({ children, className, ...props }) => {
   return (
@@ -39,12 +40,26 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-
   const handleEmailPasswordLogin = async (e) => {
     e.preventDefault();
     try {
       // Sign in with email and password
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Get Firebase token
+      const token = await user.getIdToken(true);
+
+      // Call backend to update status to active
+  
+      await axios.post('https://cuddle-up-backend.onrender.com/api/users/updateUserStatus', {
+          userId: user.uid,
+          status: 'active',
+      }, {
+          headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // console.log('User logged in and status updated to active.');
       navigate('/mood-capture');  // Redirect to the mood-capture page after successful login
     } catch (error) {
       console.error(error.message);
@@ -53,6 +68,19 @@ const LoginPage = () => {
       // setPassword('')
     }
   };
+  // const handleEmailPasswordLogin = async (e) => {
+  //   e.preventDefault();
+  //   try {
+  //     // Sign in with email and password
+  //     await signInWithEmailAndPassword(auth, email, password);
+  //     navigate('/mood-capture');  // Redirect to the mood-capture page after successful login
+  //   } catch (error) {
+  //     console.error(error.message);
+  //     alert('Error logging in. Please check your credentials!');
+  //     // setEmail('')
+  //     // setPassword('')
+  //   }
+  // };
 
   const handleGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
