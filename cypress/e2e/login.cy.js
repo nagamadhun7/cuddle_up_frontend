@@ -23,7 +23,7 @@ describe('Login Page', () => {
     });
   
     it('redirects on valid login', () => {
-      cy.get('input#email').type('test@email.com'); 
+      cy.get('input#email').type('test@gmail.com'); 
       cy.get('input#password').type('testtest'); 
       cy.contains('Log In').click();
   
