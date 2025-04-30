@@ -1,6 +1,6 @@
 describe('HomePage', () => {
     beforeEach(() => {
-      cy.visit('/'); // This will load your homepage, update the URL if necessary
+      cy.visit('http://localhost:3000/'); // This will load your homepage, update the URL if necessary
     });
   
     it('should display the homepage with the correct title and buttons', () => {
@@ -38,10 +38,9 @@ describe('HomePage', () => {
   
       // Assuming your app shows some indication of guest mode (e.g., redirects to home page or shows some message)
       // Change this according to your app's behavior when guest mode is enabled.
-      cy.url().should('eq', Cypress.config().baseUrl); // Example check to stay on the homepage
+      cy.url().should('eq', 'http://localhost:3000/mood-capture'); // Example check to stay on the homepage
   
-      // You can also test other behaviors, like showing a guest user’s interface or state
-      cy.get('.guest-user-state').should('be.visible'); // Example, update with your app's specific behavior
+      
     });
   
     it('should have animated background circles', () => {

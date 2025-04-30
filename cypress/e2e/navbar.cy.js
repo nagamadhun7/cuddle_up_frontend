@@ -1,12 +1,21 @@
 describe('Navbar', () => {
-    beforeEach(() => {
-      cy.visit('/'); // Visit the page where the Navbar is rendered
-    });
+  before(() => {
+    cy.visit('http://localhost:3000/login'); // Visit the login page
+  
+    // Log in using valid credentials
+    cy.get('input#email').type('test@gmail.com'); // Enter email
+    cy.get('input#password').type('testtest'); // Enter password
+    cy.contains('Log In').click(); // Click the login button
+    
+    // Ensure that after login, the user is redirected to /mood-capture first
+    cy.url().should('include', '/mood-capture'); // Check if it redirects to /mood-capture
+  });
+
+    
   
     context('when the user is logged in', () => {
       it('should display the correct navigation links', () => {
         // Assuming you have a login mock or session set up
-        cy.login(); // Mock user login here if necessary (You can create a custom command for logging in)
   
         // Check that the user-specific links are visible
         cy.get('a[href="/friends"]').should('be.visible');
@@ -18,7 +27,7 @@ describe('Navbar', () => {
   
       it('should log out the user and redirect to the home page', () => {
         // Log in first (or assume the user is already logged in)
-        cy.login();
+        
   
         // Click the Logout button
         cy.get('button').contains('Logout').click();
