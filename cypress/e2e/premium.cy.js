@@ -1,7 +1,7 @@
 describe('Premium Features Page', () => {
     beforeEach(() => {
       // Load the page
-      cy.visit('/premium-feature'); // Adjust this URL based on your routing setup
+      cy.visit('http://localhost:3000/premium-feature'); // Adjust this URL based on your routing setup
     });
   
     it('should display the page title', () => {

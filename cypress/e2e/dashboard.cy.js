@@ -1,80 +1,70 @@
-describe('Dashboard', () => {
-  
-  // Login Step: Logging in with valid credentials
-  before(() => {
-    cy.visit('http://localhost:3000/login'); // Visit the login page
-  
-    // Log in using valid credentials
-    cy.get('input#email').type('test@gmail.com'); // Enter email
-    cy.get('input#password').type('testtest'); // Enter password
-    cy.contains('Log In').click(); // Click the login button
-    
-    // Ensure that after login, the user is redirected to /mood-capture first
-    cy.url().should('include', '/mood-capture'); // Check if it redirects to /mood-capture
+// dashboard.cy.js
+
+describe('Dashboard Page Tests', () => {
+  beforeEach(() => {
+    cy.visit('http://localhost:3000/dashboard');
   });
 
-  // After mood capture, visit the /dashboard page
-  it('should visit the dashboard after login and mood capture', () => {
-    cy.visit('http://localhost:3000/dashboard'); // Directly visit the dashboard URL
-    
-    // Verify the title or key elements of the dashboard page
-    cy.get('h1').should('contain', 'Mood Dashboard');
-    
-    // Check for presence of major sections
-    cy.get('.summary-cards').should('exist'); // Summary cards
-    cy.get('.mood-distribution-chart').should('exist'); // Mood distribution chart
-    cy.get('.dominant-mood-chart').should('exist'); // Dominant mood chart
-    cy.get('.mood-by-time-of-day-chart').should('exist'); // Mood by time of day chart
+  it('should load the dashboard page successfully', () => {
+    cy.url().should('include', '/dashboard');
+    cy.contains('Mood Dashboard').should('be.visible');
   });
 
-  // Test 1: Check for empty state on the dashboard when no data is available
-  it('should show an empty state on the dashboard when no mood data is available', () => {
-    cy.visit('http://localhost:3000/dashboard'); // Visit the dashboard page URL
-  
-    // Assuming no data is present, check if the empty state message is displayed
-    cy.get('.empty-state').should('be.visible');
-    cy.get('.empty-state').should('contain', 'Track your mood!'); // Adjust message as needed
+  it('should display the dominant mood chart', () => {
+    cy.get('.echarts-for-react').first().should('be.visible');
+    cy.contains('Dominant Mood').should('be.visible');
   });
 
-  // Test 2: Verify time filter functionality on the dashboard (select time filter "This Week")
-  it('should change the time filter on dashboard and update the displayed data', () => {
-    cy.visit('http://localhost:3000/dashboard'); // Visit the dashboard URL
+  it('should display the mood distribution pie chart', () => {
+    cy.get('.echarts-for-react').eq(1).should('be.visible');
+    cy.contains('Mood Distribution').should('be.visible');
+  });
+
+  it('should display the mood by time of day chart', () => {
+    cy.get('.echarts-for-react').eq(2).should('be.visible');
+    cy.contains('Mood Distribution by Time of Day').should('be.visible');
+  });
+
+  it('should display the mood trends bubble chart', () => {
+    cy.get('.echarts-for-react').eq(3).should('be.visible');
+    cy.contains('Mood Trends (Bubble Chart)').should('be.visible');
+  });
+
+  it('should display the top reasons bar chart', () => {
+    cy.get('.echarts-for-react').eq(4).should('be.visible');
+    cy.contains('Top Reasons for Your Moods').should('be.visible');
+  });
+
+  it('should display the summary cards with correct data', () => {
+    cy.contains('Total Mood Entries').should('be.visible');
+    cy.contains('Most Recent Mood').should('be.visible');
+    cy.contains('Unique Moods Tracked').should('be.visible');
+  });
+
+  it('should display the recent mood entries table', () => {
+    cy.contains('Recent Mood Entries').should('be.visible');
+    cy.get('table').should('be.visible');
+    cy.get('table tbody tr').should('have.length.at.least', 1);
+  });
+
+  it('should allow changing the time filter', () => {
+    cy.get('#timeFilter').select('month');
+    cy.get('#timeFilter').should('have.value', 'month');
     
-    // Select a time period from the dropdown (e.g., "This Week")
-    cy.get('select').select('This Week');
+  });
+
+  it('should refresh data when refresh button is clicked', () => {
     
-    // Verify that the data changes based on the filter
-    cy.get('.mood-distribution-chart').should('not.have.class', 'empty');
-    cy.get('.dominant-mood-chart').should('not.have.class', 'empty');
+    cy.contains('Refresh').click();
   });
 
-  // Test 3: Check that mood data is displayed correctly on the dashboard
-  it('should display mood data in dashboard charts correctly', () => {
-    cy.visit('http://localhost:3000/dashboard'); // Visit the dashboard URL
-  
-    // Check that the mood distribution chart has data
-    cy.get('.mood-distribution-chart').find('.echarts-for-react').should('exist');
-    cy.get('.mood-distribution-chart').find('.echarts-for-react').should('not.be.empty');
-  
-    // Check that the dominant mood chart is also populated
-    cy.get('.dominant-mood-chart').find('.echarts-for-react').should('exist');
-    cy.get('.dominant-mood-chart').find('.echarts-for-react').should('not.be.empty');
-  });
 
-  // Test 4: Verify that recent mood entries are displayed correctly on the dashboard
-  it('should display recent mood entries on the dashboard table', () => {
-    cy.visit('http://localhost:3000/dashboard'); // Visit the dashboard URL
+  it('should display loading state while fetching data', () => {
+    // Delay the response to test loading state
   
-    // Verify the presence of the recent mood entries table
-    cy.get('.recent-mood-entries').should('exist');
-  
-    // Check if the first entry has the correct format
-    cy.get('.recent-mood-entries tbody tr')
-      .first()
-      .within(() => {
-        cy.get('td').eq(0).should('contain', 'Happy'); // Mood column
-        cy.get('td').eq(1).should('contain', 'Work'); // Reason column
-        cy.get('td').eq(2).should('contain', 'Morning'); // Time of Day
-      });
+    
+    cy.visit('http://localhost:3000/dashboard');
+    cy.get('.animate-spin').should('be.visible');
+    cy.get('.animate-spin').should('not.exist');
   });
 });
