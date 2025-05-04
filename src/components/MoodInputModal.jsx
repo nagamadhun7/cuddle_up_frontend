@@ -26,6 +26,220 @@ const MoodInputModal = ({
   const [guestError, setGuestError] = useState(null);
   const [error, setError] = useState("");
 
+
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [capturedImage, setCapturedImage] = useState(null);
+
+  const [showSelectionButtons, setShowSelectionButtons] = useState(true);
+const [showCamera, setShowCamera] = useState(false);
+
+
+ // Add this logging to check the video ref at different points
+useEffect(() => {
+  // Log the initial state of videoRef when component mounts
+  console.log("Initial videoRef state:", videoRef.current ? "Exists" : "Doesn't exist");
+  
+  if (showCamera) {
+    console.log("Camera view active - starting camera");
+    // Debug log before starting camera
+    console.log("Before startCamera - videoRef:", videoRef.current ? "Exists" : "Doesn't exist");
+    startCamera();
+    // Debug log after starting camera
+    setTimeout(() => {
+      console.log("After startCamera - videoRef:", videoRef.current ? "Exists" : "Doesn't exist");
+      console.log("Video srcObject:", videoRef.current?.srcObject ? "Exists" : "Doesn't exist");
+    }, 500);
+  } else {
+    console.log("Camera view inactive - calling stopCamera function");
+    // Debug log before stopping camera
+    console.log("Before stopCamera - videoRef:", videoRef.current ? "Exists" : "Doesn't exist");
+    console.log("Video srcObject:", videoRef.current?.srcObject ? "Exists" : "Doesn't exist");
+    stopCamera();
+  }
+}, [showCamera]);
+
+// Modify startCamera to retain a reference to the stream
+const startCamera = async () => {
+  try {
+    console.log("Requesting camera access...");
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      video: { 
+        facingMode: "user",
+        width: { ideal: 1280 },
+        height: { ideal: 720 } 
+      } 
+    });
+    
+    console.log("Camera access granted, setting up video");
+    // Store the stream globally for easier access when stopping
+    window.cameraStream = stream;
+    
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.onloadedmetadata = () => {
+        console.log("Video metadata loaded, playing video");
+        videoRef.current.play()
+          .then(() => console.log("Video playback started"))
+          .catch(err => console.error("Error playing video:", err));
+      };
+    } else {
+      console.error("Video reference is not available");
+    }
+  } catch (error) {
+    console.error("Error accessing the camera:", error);
+    alert("Camera access failed. Please make sure you've granted camera permissions and are using HTTPS.");
+  }
+};
+
+// Modified stopCamera to use the global stream reference
+const stopCamera = () => {
+  console.log("Stopping camera - detailed process");
+  
+  try {
+    // Try to stop via the global stream first
+    if (window.cameraStream) {
+      console.log("Global camera stream exists, stopping tracks");
+      const tracks = window.cameraStream.getTracks();
+      console.log(`Found ${tracks.length} tracks in global stream`);
+      
+      tracks.forEach((track, index) => {
+        console.log(`Stopping track ${index} (${track.kind}) from global stream`);
+        track.stop();
+        console.log(`Track ${index} from global stream stopped`);
+      });
+      
+      window.cameraStream = null;
+      console.log("Global stream reference cleared");
+    }
+    
+    // Also try the standard videoRef approach as backup
+    if (videoRef.current) {
+      console.log("Video reference exists");
+      
+      if (videoRef.current.srcObject) {
+        console.log("Video source exists, getting tracks");
+        
+        const tracks = videoRef.current.srcObject.getTracks();
+        console.log(`Found ${tracks.length} tracks in video source`);
+        
+        tracks.forEach((track, index) => {
+          console.log(`Stopping track ${index} (${track.kind}) from video source`);
+          track.stop();
+          console.log(`Track ${index} from video source stopped`);
+        });
+        
+        videoRef.current.srcObject = null;
+        console.log("Video source cleared");
+      } else {
+        console.log("No video source to stop");
+      }
+      
+      videoRef.current.pause();
+      console.log("Video paused");
+    } else {
+      console.log("No video reference to stop");
+    }
+  } catch (error) {
+    console.error("Error stopping camera:", error);
+  }
+  
+  console.log("Camera stop process completed");
+};
+  
+  
+
+  // const takeSelfie = () => {
+  //   const canvas = canvasRef.current;
+  //   const video = videoRef.current;
+  //   if (canvas && video) {
+  //     const ctx = canvas.getContext("2d");
+  //     canvas.width = video.videoWidth;
+  //     canvas.height = video.videoHeight;
+  //     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  //     setCapturedImage(canvas.toDataURL("image/png"));
+  //   }
+  // };
+  // const takeSelfie = () => {
+  //   const canvas = canvasRef.current;
+  //   const video = videoRef.current;
+  //   if (canvas && video) {
+  //     const ctx = canvas.getContext("2d");
+  //     canvas.width = video.videoWidth;
+  //     canvas.height = video.videoHeight;
+  //     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+  //     // Get the data URL directly from the canvas
+  //     const dataUrl = canvas.toDataURL("image/png");
+      
+  //     // Use the data URL for both selected image and preview
+  //     setSelectedImage(dataUrl);
+  //     setImagePreview(dataUrl);
+      
+  //     // Stop the camera after taking a selfie
+  //     stopCamera();
+      
+  //     // Hide the camera view
+  //     setShowCamera(false);
+  //   }
+  // };
+  // Helper function to convert a data URL to a Blob
+const dataURLtoBlob = (dataURL) => {
+  // Convert base64/URLEncoded data component to raw binary data
+  let byteString;
+  if (dataURL.split(',')[0].indexOf('base64') >= 0) {
+    byteString = atob(dataURL.split(',')[1]);
+  } else {
+    byteString = decodeURIComponent(dataURL.split(',')[1]);
+  }
+
+  // Separate out the mime component
+  const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
+
+  // Write the bytes of the string to an ArrayBuffer
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+
+  // Create a blob with the ArrayBuffer and mime type
+  return new Blob([ab], { type: mimeString });
+};
+
+// Modified takeSelfie function to create a Blob and set proper file-like object
+const takeSelfie = () => {
+  const canvas = canvasRef.current;
+  const video = videoRef.current;
+  if (canvas && video) {
+    const ctx = canvas.getContext("2d");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Get the data URL from the canvas
+    const dataUrl = canvas.toDataURL("image/png");
+    
+    // Convert data URL to Blob
+    const blob = dataURLtoBlob(dataUrl);
+    
+    // Create a File-like object for compatibility with your upload function
+    const selfieFile = new File([blob], "selfie.png", { type: "image/png" });
+    
+    // Set the File object as selectedImage for processing
+    setSelectedImage(selfieFile);
+    
+    // Use the data URL for preview
+    setImagePreview(dataUrl);
+    
+    // Stop the camera after taking a selfie
+    stopCamera();
+    
+    // Hide the camera view
+    setShowCamera(false);
+  }
+};
+
   useEffect(() => {
     if (!audioURL) {
       setAudioBlob(null);  // Ensure audio is fully cleared
@@ -140,92 +354,305 @@ const MoodInputModal = ({
   // Define modal content dynamically
   const getModalContent = () => {
     switch (inputType) {
+      // case "photo":
+      //   return (
+      //     <div className="w-full flex flex-col items-center gap-4">
+      //       {imagePreview ? (
+      //         <div className="w-full flex flex-col items-center gap-3">
+      //           <div className="relative w-64 h-64 rounded-lg overflow-hidden shadow-lg border-2 border-blue-400">
+      //             <img
+      //               src={imagePreview}
+      //               alt="Preview"
+      //               className="w-full h-full object-cover"
+      //             />
+      //             <button
+      //             disabled={isProcessing}
+      //               onClick={() => {
+      //                 setSelectedImage(null);
+      //                 setImagePreview(null);
+      //               }}
+      //               className={`absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition ${isProcessing && 'cursor-not-allowed'}`}
+      //             >
+      //               <svg
+      //                 xmlns="http://www.w3.org/2000/svg"
+      //                 className="h-5 w-5"
+      //                 viewBox="0 0 20 20"
+      //                 fill="currentColor"
+      //               >
+      //                 <path
+      //                   fillRule="evenodd"
+      //                   d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+      //                   clipRule="evenodd"
+      //                 />
+      //               </svg>
+      //             </button>
+      //           </div>
+      //           <p className="text-sm text-gray-600">{selectedImage?.name}</p>
+      //         </div>
+      //       ) : (
+      //         <>
+      //           <input
+      //             type="file"
+      //             accept="image/*"
+      //             className="hidden"
+      //             id="photoInput"
+      //             onChange={handleImageChange}
+      //           />
+      //           <label
+      //             htmlFor="photoInput"
+      //             className="flex flex-col items-center justify-center gap-3 w-full h-48 bg-gradient-to-br from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 rounded-2xl cursor-pointer shadow-md transition-all border-2 border-dashed border-blue-300"
+      //           >
+      //             <div className="bg-blue-500 p-3 rounded-full shadow-md">
+      //               <svg
+      //                 xmlns="http://www.w3.org/2000/svg"
+      //                 className="h-8 w-8 text-white"
+      //                 fill="none"
+      //                 viewBox="0 0 24 24"
+      //                 stroke="currentColor"
+      //               >
+      //                 <path
+      //                   strokeLinecap="round"
+      //                   strokeLinejoin="round"
+      //                   strokeWidth={2}
+      //                   d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+      //                 />
+      //                 <path
+      //                   strokeLinecap="round"
+      //                   strokeLinejoin="round"
+      //                   strokeWidth={2}
+      //                   d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+      //                 />
+      //               </svg>
+      //             </div>
+      //             <div className="text-center">
+      //               <span className="text-base font-medium text-blue-700">
+      //                 Choose a Photo
+      //               </span>
+      //               <p className="text-xs text-blue-600 mt-1">
+      //                 Click to browse your files
+      //               </p>
+      //             </div>
+      //           </label>
+      //              <div style={{ textAlign: "center", padding: "20px" }}>
+      //      <h2>Live Camera</h2>
+      //      <video ref={videoRef} autoPlay playsInline style={{ width: "100%", maxWidth: "500px" }} />
+      //      <br />
+      //      <button onClick={takeSelfie} style={{ marginTop: "10px", padding: "10px", fontSize: "16px" }}>
+      //        📸 Take Selfie
+      //      </button>
+      //      <canvas ref={canvasRef} style={{ display: "none" }}></canvas>
+          
+      //     {capturedImage && (
+      //       <div>
+      //         <h3>Your Selfie</h3>
+      //         <img src={capturedImage} alt="Captured Selfie" style={{ width: "100%", maxWidth: "500px" }} />
+      //       </div>
+      //     )}
+      //   </div>
+      //           <div className="mt-2 text-sm text-gray-500">
+      //             Supports: JPG, PNG, JPEG
+      //           </div>
+      //         </>
+      //       )}
+      //     </div>
+      
+      //   );
       case "photo":
-        return (
-          <div className="w-full flex flex-col items-center gap-4">
-            {imagePreview ? (
-              <div className="w-full flex flex-col items-center gap-3">
-                <div className="relative w-64 h-64 rounded-lg overflow-hidden shadow-lg border-2 border-blue-400">
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                  disabled={isProcessing}
-                    onClick={() => {
-                      setSelectedImage(null);
-                      setImagePreview(null);
-                    }}
-                    className={`absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition ${isProcessing && 'cursor-not-allowed'}`}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </div>
-                <p className="text-sm text-gray-600">{selectedImage?.name}</p>
-              </div>
-            ) : (
-              <>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  id="photoInput"
-                  onChange={handleImageChange}
+  return (
+    <div className="w-full flex flex-col items-center gap-4">
+      {imagePreview ? (
+        <div className="w-full flex flex-col items-center gap-3">
+          <div className="relative w-64 h-64 rounded-lg overflow-hidden shadow-lg border-2 border-blue-400">
+            <img
+              src={imagePreview}
+              alt="Preview"
+              className="w-full h-full object-cover"
+            />
+            <button
+              disabled={isProcessing}
+              onClick={() => {
+                setSelectedImage(null);
+                setImagePreview(null);
+                setShowSelectionButtons(true);
+                setShowCamera(false);
+              }}
+              className={`absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition ${isProcessing && 'cursor-not-allowed'}`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                  clipRule="evenodd"
                 />
-                <label
-                  htmlFor="photoInput"
-                  className="flex flex-col items-center justify-center gap-3 w-full h-48 bg-gradient-to-br from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 rounded-2xl cursor-pointer shadow-md transition-all border-2 border-dashed border-blue-300"
-                >
-                  <div className="bg-blue-500 p-3 rounded-full shadow-md">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-8 w-8 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                  </div>
-                  <div className="text-center">
-                    <span className="text-base font-medium text-blue-700">
-                      Choose a Photo
-                    </span>
-                    <p className="text-xs text-blue-600 mt-1">
-                      Click to browse your files
-                    </p>
-                  </div>
-                </label>
-                <div className="mt-2 text-sm text-gray-500">
-                  Supports: JPG, PNG, JPEG
-                </div>
-              </>
-            )}
+              </svg>
+            </button>
           </div>
-        );
+          <p className="text-sm text-gray-600">{selectedImage?.name}</p>
+          <button
+            onClick={() => {
+              setSelectedImage(null);
+              setImagePreview(null);
+              setShowSelectionButtons(true);
+              setShowCamera(false);
+            }}
+            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+          >
+            Try Again
+          </button>
+        </div>
+      ) : showSelectionButtons ? (
+        <div className="flex flex-col gap-4 w-full items-center">
+          <button
+            onClick={() => {
+              setShowSelectionButtons(false);
+              setShowCamera(false);
+            }}
+            className="flex items-center justify-center gap-2 px-4 py-3 w-64 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition shadow-md"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+              />
+            </svg>
+            Choose from Device
+          </button>
+          <button
+            onClick={() => {
+              setShowSelectionButtons(false);
+              setShowCamera(true);
+            }}
+            className="flex items-center justify-center gap-2 px-4 py-3 w-64 bg-green-500 text-white rounded-lg hover:bg-green-600 transition shadow-md"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+              />
+            </svg>
+            Take Selfie
+          </button>
+        </div>
+      ) : showCamera ? (
+        <div className="w-full flex flex-col items-center gap-3">
+          <h2 className="text-lg font-medium text-gray-700">Live Camera</h2>
+          <div className="relative w-full max-w-md rounded-lg overflow-hidden shadow-lg border-2 border-green-400">
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              playsInline 
+              muted
+              className="w-full h-64 bg-black" 
+            />
+          </div>
+          <button 
+            onClick={takeSelfie} 
+            className="mt-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center gap-2"
+          >
+            <span>📸</span> Take Selfie
+          </button>
+          <button
+            // onClick={() => {
+            //   setShowSelectionButtons(true);
+            //   setShowCamera(false);
+            // }}
+            onClick={() => {
+              // Stop camera when going back
+              // if (videoRef.current && videoRef.current.srcObject) {
+              //   const tracks = videoRef.current.srcObject.getTracks();
+              //   tracks.forEach(track => track.stop());
+              //   videoRef.current.srcObject = null;
+              //   console.log("Camera stopped from back button");
+              // }
+              setShowSelectionButtons(true);
+              setShowCamera(false);
+            }}
+            className="mt-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
+          >
+            Back
+          </button>
+          <canvas ref={canvasRef} style={{ display: "none" }}></canvas>
+        </div>
+      ) : (
+        <>
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            id="photoInput"
+            onChange={handleImageChange}
+          />
+          <label
+            htmlFor="photoInput"
+            className="flex flex-col items-center justify-center gap-3 w-full h-48 bg-gradient-to-br from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 rounded-2xl cursor-pointer shadow-md transition-all border-2 border-dashed border-blue-300"
+          >
+            <div className="bg-blue-500 p-3 rounded-full shadow-md">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-8 w-8 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+            </div>
+            <div className="text-center">
+              <span className="text-base font-medium text-blue-700">
+                Choose a Photo
+              </span>
+              <p className="text-xs text-blue-600 mt-1">
+                Click to browse your files
+              </p>
+            </div>
+          </label>
+          <div className="mt-2 text-sm text-gray-500">
+            Supports: JPG, PNG, JPEG
+          </div>
+          <button
+            onClick={() => {
+              setShowSelectionButtons(true);
+            }}
+            className="mt-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
+          >
+            Back
+          </button>
+        </>
+      )}
+    </div>
+  );
 
       case "audio":
         return (
@@ -787,3 +1214,11 @@ const MoodInputModal = ({
 };
 
 export default MoodInputModal;
+
+
+
+
+
+
+
+
